@@ -1,0 +1,306 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Shared Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        ('email_verified' in request.auth.token &&
+         request.auth.token.email_verified == true &&
+         'email' in request.auth.token &&
+         request.auth.token.email == 'mithunmandal8873@gmail.com')
+      );
+    }
+
+    // Validation Helpers
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.preferredLanguage in ['bn', 'en'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidUniversity(data) {
+      return data.nameEn is string && data.nameEn.size() >= 1 && data.nameEn.size() <= 160 &&
+             data.nameBn is string && data.nameBn.size() >= 1 && data.nameBn.size() <= 160 &&
+             data.abbreviation is string && data.abbreviation.size() >= 1 && data.abbreviation.size() <= 24 &&
+             data.category in ['PUBLIC', 'PRIVATE', 'SCIENCE_TECH', 'AGRICULTURAL', 'ENGINEERING', 'CLUSTER'] &&
+             data.sessionYear is string && data.sessionYear.size() >= 1 && data.sessionYear.size() <= 32 &&
+             (!('sourceReference' in data) || (data.sourceReference is string && data.sourceReference.size() <= 300)) &&
+             (!('verificationDate' in data) || (data.verificationDate is string && data.verificationDate.size() <= 40)) &&
+             data.isPatternVerified is bool &&
+             data.units is list && data.units.size() <= 20 &&
+             data.visibility == 'public' &&
+             data.updatedBy is string && data.updatedBy == request.auth.uid && data.updatedBy.size() <= 128 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidVerifiedQuestion(data) {
+      return data.universityId is string && data.universityId.size() >= 1 && data.universityId.size() <= 128 &&
+             data.unitId is string && data.unitId.size() >= 1 && data.unitId.size() <= 64 &&
+             data.examYear is string && data.examYear.size() >= 1 && data.examYear.size() <= 32 &&
+             data.sourceLabel is string && data.sourceLabel.size() >= 1 && data.sourceLabel.size() <= 160 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 80 &&
+             data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 120 &&
+             data.difficulty in ['EASY', 'MODERATE', 'HARD', 'ADMISSION_STANDARD'] &&
+             data.questionBn is string && data.questionBn.size() >= 1 && data.questionBn.size() <= 1500 &&
+             data.optionA is string && data.optionA.size() >= 1 && data.optionA.size() <= 500 &&
+             data.optionB is string && data.optionB.size() >= 1 && data.optionB.size() <= 500 &&
+             data.optionC is string && data.optionC.size() >= 1 && data.optionC.size() <= 500 &&
+             data.optionD is string && data.optionD.size() >= 1 && data.optionD.size() <= 500 &&
+             data.correctOption in ['A', 'B', 'C', 'D'] &&
+             data.explanationBn is string && data.explanationBn.size() >= 1 && data.explanationBn.size() <= 2000 &&
+             data.visibility == 'public' &&
+             data.verifiedBy is string && data.verifiedBy == request.auth.uid && data.verifiedBy.size() <= 128 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTestRecord(data, userId) {
+      return data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.mode in ['VARSITY_QUESTION_BANK', 'VARSITY_MODEL_TEST', 'MEDICAL'] &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 160 &&
+             data.titleBn is string && data.titleBn.size() >= 1 && data.titleBn.size() <= 160 &&
+             data.universityId is string && data.universityId.size() <= 128 &&
+             data.unitId is string && data.unitId.size() <= 64 &&
+             data.sessionYear is string && data.sessionYear.size() <= 32 &&
+             data.sourceType in ['VERIFIED_BANK', 'AI_PRACTICE'] &&
+             data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 300 &&
+             data.attemptedCount is int && data.attemptedCount >= 0 && data.attemptedCount <= 300 &&
+             data.correctCount is int && data.correctCount >= 0 && data.correctCount <= 300 &&
+             data.wrongCount is int && data.wrongCount >= 0 && data.wrongCount <= 300 &&
+             data.unansweredCount is int && data.unansweredCount >= 0 && data.unansweredCount <= 300 &&
+             data.totalScore is number && data.totalScore >= -300 && data.totalScore <= 1000 &&
+             data.maxPossibleScore is number && data.maxPossibleScore >= 1 && data.maxPossibleScore <= 1000 &&
+             data.accuracyPercent is number && data.accuracyPercent >= 0 && data.accuracyPercent <= 100 &&
+             data.durationSeconds is int && data.durationSeconds >= 60 && data.durationSeconds <= 36000 &&
+             data.timeTakenSeconds is int && data.timeTakenSeconds >= 0 && data.timeTakenSeconds <= 36000 &&
+             data.positiveMark is number && data.positiveMark >= 0 && data.positiveMark <= 20 &&
+             data.negativeMark is number && data.negativeMark >= 0 && data.negativeMark <= 20 &&
+             data.unansweredMark is number && data.unansweredMark >= -10 && data.unansweredMark <= 10 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTestReviewItem(data) {
+      return data.questionIndex is int && data.questionIndex >= 0 && data.questionIndex <= 300 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 80 &&
+             data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 120 &&
+             data.questionBn is string && data.questionBn.size() >= 1 && data.questionBn.size() <= 1500 &&
+             data.optionA is string && data.optionA.size() >= 1 && data.optionA.size() <= 500 &&
+             data.optionB is string && data.optionB.size() >= 1 && data.optionB.size() <= 500 &&
+             data.optionC is string && data.optionC.size() >= 1 && data.optionC.size() <= 500 &&
+             data.optionD is string && data.optionD.size() >= 1 && data.optionD.size() <= 500 &&
+             data.correctOption in ['A', 'B', 'C', 'D'] &&
+             data.selectedOption in ['', 'A', 'B', 'C', 'D'] &&
+             data.explanationBn is string && data.explanationBn.size() >= 1 && data.explanationBn.size() <= 2000 &&
+             data.isAiGenerated is bool &&
+             data.sourceInfo is string && data.sourceInfo.size() <= 200 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidActiveSession(data, userId) {
+      return data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.sessionKey is string && data.sessionKey.size() >= 1 && data.sessionKey.size() <= 128 &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 160 &&
+             data.titleBn is string && data.titleBn.size() >= 1 && data.titleBn.size() <= 160 &&
+             data.mode is string && data.mode.size() >= 1 && data.mode.size() <= 40 &&
+             data.remainingSeconds is int && data.remainingSeconds >= 0 && data.remainingSeconds <= 36000 &&
+             data.answersMap is map && data.answersMap.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Admin Allowlist (Read own entry only; writes disabled to prevent self-promotion)
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'preferredLanguage', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'preferredLanguage', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'preferredLanguage', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      // User Test Records (append-only after submission)
+      match /test_records/{recordId} {
+        allow get: if isSignedIn() && isValidId(recordId) && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() &&
+                         isValidId(recordId) &&
+                         request.auth.uid == userId &&
+                         incoming().keys().hasAll([
+                           'userId', 'mode', 'titleEn', 'titleBn', 'universityId', 'unitId',
+                           'sessionYear', 'sourceType', 'totalQuestions', 'attemptedCount',
+                           'correctCount', 'wrongCount', 'unansweredCount', 'totalScore',
+                           'maxPossibleScore', 'accuracyPercent', 'durationSeconds',
+                           'timeTakenSeconds', 'positiveMark', 'negativeMark',
+                           'unansweredMark', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'mode', 'titleEn', 'titleBn', 'universityId', 'unitId',
+                           'sessionYear', 'sourceType', 'totalQuestions', 'attemptedCount',
+                           'correctCount', 'wrongCount', 'unansweredCount', 'totalScore',
+                           'maxPossibleScore', 'accuracyPercent', 'durationSeconds',
+                           'timeTakenSeconds', 'positiveMark', 'negativeMark',
+                           'unansweredMark', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidTestRecord(incoming(), userId);
+        allow update: if false;
+        allow delete: if isSignedIn() && isValidId(recordId) && request.auth.uid == userId;
+
+        match /items/{itemId} {
+          allow get: if isSignedIn() && isValidId(itemId) && request.auth.uid == userId;
+          allow list: if isSignedIn() && request.auth.uid == userId;
+          allow create: if isSignedIn() &&
+                           isValidId(itemId) &&
+                           request.auth.uid == userId &&
+                           existsAfter(/databases/$(database)/documents/users/$(userId)/test_records/$(recordId)) &&
+                           incoming().keys().hasAll([
+                             'questionIndex', 'subject', 'topic', 'questionBn',
+                             'optionA', 'optionB', 'optionC', 'optionD',
+                             'correctOption', 'selectedOption', 'explanationBn',
+                             'isAiGenerated', 'sourceInfo', 'createdAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'questionIndex', 'subject', 'topic', 'questionBn',
+                             'optionA', 'optionB', 'optionC', 'optionD',
+                             'correctOption', 'selectedOption', 'explanationBn',
+                             'isAiGenerated', 'sourceInfo', 'createdAt'
+                           ]) &&
+                           isValidTestReviewItem(incoming());
+          allow update: if false;
+          allow delete: if isSignedIn() && isValidId(itemId) && request.auth.uid == userId;
+        }
+      }
+
+      // Active Session Cloud Sync
+      match /active_session/{sessionId} {
+        allow get: if isSignedIn() && isValidId(sessionId) && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() &&
+                         isValidId(sessionId) &&
+                         request.auth.uid == userId &&
+                         incoming().keys().hasAll([
+                           'userId', 'sessionKey', 'titleEn', 'titleBn', 'mode',
+                           'remainingSeconds', 'answersMap', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'sessionKey', 'titleEn', 'titleBn', 'mode',
+                           'remainingSeconds', 'answersMap', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidActiveSession(incoming(), userId);
+        allow update: if isSignedIn() &&
+                         isValidId(sessionId) &&
+                         request.auth.uid == userId &&
+                         isValidActiveSession(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'sessionKey', 'titleEn', 'titleBn', 'mode',
+                           'remainingSeconds', 'answersMap', 'updatedAt'
+                         ]);
+        allow delete: if isSignedIn() && isValidId(sessionId) && request.auth.uid == userId;
+      }
+    }
+
+    // Shared University Catalogue (Signed-in public read aligned on visibility == 'public'; Admin-only writes)
+    match /universities/{universityId} {
+      allow get: if isSignedIn() && isValidId(universityId) && (existing().visibility == 'public' || isAdmin());
+      allow list: if isSignedIn() && (existing().visibility == 'public' || isAdmin());
+      allow create: if isAdmin() &&
+                       isValidId(universityId) &&
+                       incoming().keys().hasAll([
+                         'nameEn', 'nameBn', 'abbreviation', 'category', 'sessionYear',
+                         'isPatternVerified', 'units', 'visibility', 'updatedBy',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'nameEn', 'nameBn', 'abbreviation', 'category', 'sessionYear',
+                         'sourceReference', 'verificationDate', 'isPatternVerified', 'units',
+                         'visibility', 'updatedBy', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUniversity(incoming());
+      allow update: if isAdmin() &&
+                       isValidId(universityId) &&
+                       isValidUniversity(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'nameEn', 'nameBn', 'abbreviation', 'category', 'sessionYear',
+                         'sourceReference', 'verificationDate', 'isPatternVerified', 'units',
+                         'visibility', 'updatedBy', 'updatedAt'
+                       ]);
+      allow delete: if isAdmin() && isValidId(universityId);
+    }
+
+    // Verified Previous-Year Question Bank (Signed-in public read aligned on visibility == 'public'; Admin-only writes)
+    match /verified_questions/{questionId} {
+      allow get: if isSignedIn() && isValidId(questionId) && (existing().visibility == 'public' || isAdmin());
+      allow list: if isSignedIn() && (existing().visibility == 'public' || isAdmin());
+      allow create: if isAdmin() &&
+                       isValidId(questionId) &&
+                       incoming().keys().hasAll([
+                         'universityId', 'unitId', 'examYear', 'sourceLabel', 'subject',
+                         'topic', 'difficulty', 'questionBn', 'optionA', 'optionB',
+                         'optionC', 'optionD', 'correctOption', 'explanationBn',
+                         'visibility', 'verifiedBy', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'universityId', 'unitId', 'examYear', 'sourceLabel', 'subject',
+                         'topic', 'difficulty', 'questionBn', 'optionA', 'optionB',
+                         'optionC', 'optionD', 'correctOption', 'explanationBn',
+                         'visibility', 'verifiedBy', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidVerifiedQuestion(incoming());
+      allow update: if isAdmin() &&
+                       isValidId(questionId) &&
+                       isValidVerifiedQuestion(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'universityId', 'unitId', 'examYear', 'sourceLabel', 'subject',
+                         'topic', 'difficulty', 'questionBn', 'optionA', 'optionB',
+                         'optionC', 'optionD', 'correctOption', 'explanationBn',
+                         'visibility', 'verifiedBy', 'updatedAt'
+                       ]);
+      allow delete: if isAdmin() && isValidId(questionId);
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user preferences and language settings.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "preferredLanguage": { "type": "string", "enum": ["bn", "en"], "description": "Preferred UI language" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "ServerTimestamp creation time" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "ServerTimestamp update time" }
+      },
+      "required": ["userId", "displayName", "preferredLanguage", "createdAt", "updatedAt"]
+    },
+    "AdminEntry": {
+      "title": "AdminEntry",
+      "description": "Server-managed administrator allowlist document.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["admin"] }
+      },
+      "required": ["role"]
+    },
+    "UniversityConfig": {
+      "title": "UniversityConfig",
+      "description": "Bangladesh university admission catalogue entry with units and verified patterns.",
+      "type": "object",
+      "properties": {
+        "nameEn": { "type": "string" },
+        "nameBn": { "type": "string" },
+        "abbreviation": { "type": "string" },
+        "category": { "type": "string", "enum": ["PUBLIC", "PRIVATE", "SCIENCE_TECH", "AGRICULTURAL", "ENGINEERING", "CLUSTER"] },
+        "sessionYear": { "type": "string" },
+        "sourceReference": { "type": "string" },
+        "verificationDate": { "type": "string" },
+        "isPatternVerified": { "type": "boolean" },
+        "units": { "type": "array", "description": "Configured admission units and subject mark distributions" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "updatedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nameEn", "nameBn", "abbreviation", "category", "sessionYear", "isPatternVerified", "units", "visibility", "updatedBy", "createdAt", "updatedAt"]
+    },
+    "VerifiedQuestion": {
+      "title": "VerifiedQuestion",
+      "description": "Admin-verified previous-year Bangladesh admission MCQ with Bangla explanation.",
+      "type": "object",
+      "properties": {
+        "universityId": { "type": "string" },
+        "unitId": { "type": "string" },
+        "examYear": { "type": "string" },
+        "sourceLabel": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["EASY", "MODERATE", "HARD", "ADMISSION_STANDARD"] },
+        "questionBn": { "type": "string" },
+        "optionA": { "type": "string" },
+        "optionB": { "type": "string" },
+        "optionC": { "type": "string" },
+        "optionD": { "type": "string" },
+        "correctOption": { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "explanationBn": { "type": "string" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "verifiedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["universityId", "unitId", "examYear", "sourceLabel", "subject", "topic", "difficulty", "questionBn", "optionA", "optionB", "optionC", "optionD", "correctOption", "explanationBn", "visibility", "verifiedBy", "createdAt", "updatedAt"]
+    },
+    "TestRecord": {
+      "title": "TestRecord",
+      "description": "Submitted mock test summary and score breakdown.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mode": { "type": "string", "enum": ["VARSITY_QUESTION_BANK", "VARSITY_MODEL_TEST", "MEDICAL"] },
+        "titleEn": { "type": "string" },
+        "titleBn": { "type": "string" },
+        "universityId": { "type": "string" },
+        "unitId": { "type": "string" },
+        "sessionYear": { "type": "string" },
+        "sourceType": { "type": "string", "enum": ["VERIFIED_BANK", "AI_PRACTICE"] },
+        "totalQuestions": { "type": "integer" },
+        "attemptedCount": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "wrongCount": { "type": "integer" },
+        "unansweredCount": { "type": "integer" },
+        "totalScore": { "type": "number" },
+        "maxPossibleScore": { "type": "number" },
+        "accuracyPercent": { "type": "number" },
+        "durationSeconds": { "type": "integer" },
+        "timeTakenSeconds": { "type": "integer" },
+        "positiveMark": { "type": "number" },
+        "negativeMark": { "type": "number" },
+        "unansweredMark": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mode", "titleEn", "titleBn", "universityId", "unitId", "sessionYear", "sourceType", "totalQuestions", "attemptedCount", "correctCount", "wrongCount", "unansweredCount", "totalScore", "maxPossibleScore", "accuracyPercent", "durationSeconds", "timeTakenSeconds", "positiveMark", "negativeMark", "unansweredMark", "createdAt", "updatedAt"]
+    },
+    "TestReviewItem": {
+      "title": "TestReviewItem",
+      "description": "Individual question, user choice, and Bangla explanation for a submitted test record.",
+      "type": "object",
+      "properties": {
+        "questionIndex": { "type": "integer" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "questionBn": { "type": "string" },
+        "optionA": { "type": "string" },
+        "optionB": { "type": "string" },
+        "optionC": { "type": "string" },
+        "optionD": { "type": "string" },
+        "correctOption": { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "selectedOption": { "type": "string", "enum": ["", "A", "B", "C", "D"] },
+        "explanationBn": { "type": "string" },
+        "isAiGenerated": { "type": "boolean" },
+        "sourceInfo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["questionIndex", "subject", "topic", "questionBn", "optionA", "optionB", "optionC", "optionD", "correctOption", "selectedOption", "explanationBn", "isAiGenerated", "sourceInfo", "createdAt"]
+    },
+    "ActiveTestSessionSync": {
+      "title": "ActiveTestSessionSync",
+      "description": "In-progress test state synced to Firestore for multi-device progress recovery.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sessionKey": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleBn": { "type": "string" },
+        "mode": { "type": "string" },
+        "remainingSeconds": { "type": "integer" },
+        "answersMap": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "sessionKey", "titleEn", "titleBn", "mode", "remainingSeconds", "answersMap", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile and language preference."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminEntry" },
+      "description": "Administrator allowlist."
+    },
+    "/universities/{universityId}": {
+      "schema": { "$ref": "#/entities/UniversityConfig" },
+      "description": "Shared Bangladesh university catalogue and verified unit patterns."
+    },
+    "/verified_questions/{questionId}": {
+      "schema": { "$ref": "#/entities/VerifiedQuestion" },
+      "description": "Admin-verified previous-year admission question bank."
+    },
+    "/users/{userId}/test_records/{recordId}": {
+      "schema": { "$ref": "#/entities/TestRecord" },
+      "description": "User submitted test records."
+    },
+    "/users/{userId}/test_records/{recordId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/TestReviewItem" },
+      "description": "Answer review items for a submitted test."
+    },
+    "/users/{userId}/active_session/{sessionId}": {
+      "schema": { "$ref": "#/entities/ActiveTestSessionSync" },
+      "description": "Cloud-synced active test progress."
+    }
+  }
+}
